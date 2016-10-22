@@ -10,7 +10,7 @@
 //#include "SSD1306.h"
 #include "Framebuffer.h"
 #include <avr/pgmspace.h>
-#include "fonts/fonts.h"
+#include "fonts.h"
 #include "fonts/WD8.h"
 
 
@@ -101,6 +101,93 @@ const uint8_t Atomic [] PROGMEM = {
 	0x00, 0x00, 0x00, 0x30, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3C, 0x38, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xC0, 0x00, 0x00, 0x00
 };
+
+uint8_t Punctuate(char mark)
+{
+	switch (mark)
+	{
+		case '!': return EXCLAMATION; break;
+		case '"' : return DQUOTE; break;
+		case '#' : return HASH; break;
+		case '$' : return DOLLAR; break;
+		case '%' : return PERCENT; break;
+		case '&' : return AMPERSAND; break;
+		case '\'' : return SQUOTE; break;
+		case '(' : return OBRACKET; break;
+		case ')' : return CBRACKET; break;
+		case '*' : return ASTERISK; break;
+		case '+' : return PLUS; break;
+		case ',' : return COMMA; break;
+		case '-' : return DASH; break;
+		case '.' : return DOT; break;
+		case '/' : return FSLASH; break;
+		case '0' : return ZERO; break;
+		case ':' : return COLON; break;
+		case ';' : return SCOLON; break;
+		case '<' : return LTHAN; break;
+		case '=' : return EQUALS; break;
+		case '>' : return GTHAN; break;
+		case '?' : return QUESTION; break;
+		case '@' : return AT; break;
+		case 'A' : return CAPA; break;
+		case '[' : return OSQUARE; break;
+		case '\\' : return BSLASH; break;
+		case ']' : return CSQUARE; break;
+		case '^' : return CARET; break;
+		case '_' : return USCORE; break;
+		case '`' : return OQUOTE; break;
+		case 'a' : return LOWERA; break;
+		case '{' : return OCURL; break;
+			case '|' : return PIPE; break;
+		case '}' : return CCURL; break;
+		case '~' : return TILDE; break;
+		
+	}
+	return QUESTION;
+}
+
+void WriteText(const FONT_INFO *fontp, const char text[], uint8_t x, uint8_t y, uint8_t orient )
+{
+	
+	//uint8_t chars[sizeof(text)];
+	uint8_t nChars = (strlen(text));
+	uint8_t chars[nChars]={0};
+	
+	uint8_t width=0;
+
+	
+	//for (uint8_t i=0; i<sizeof(text);i++)
+	for (uint8_t i=0; i<nChars;i++)
+	{
+		if ((uint8_t)text[i]==0x20) width=width+fontp->spacePixels;
+		else
+		{
+			if ((uint8_t)text[i]>=0x41 && (uint8_t)text[i]<=0x5A) chars[i]=(uint8_t)text[i]-0x41+CAPA;
+			if ((uint8_t)text[i]>=0x61 && (uint8_t)text[i]<=0x7A) chars[i]=(uint8_t)text[i]-0x61+LOWERA;
+			if ((uint8_t)text[i]>=0x30 && (uint8_t)text[i]<=0x39) chars[i]=(uint8_t)text[i]-0x30+ZERO;
+			if (chars[i]==0) chars[i]=Punctuate(text[i]);
+			width=width+pgm_read_byte(&(fontp->charInfo[chars[i]].widthBits))+2;
+		}
+	}
+	switch(orient)
+	{
+		case LEFT: x=0; break;
+		case CENTRE: x=64-(width/2); break;
+		case RIGHT: x=128-width; break;
+	}
+	//for (uint8_t i=0; i<sizeof(text);i++)
+	for (uint8_t i=0; i<nChars;i++)
+	{
+		if ((uint8_t)text[i]==0x20) x=x+fontp->spacePixels;
+		else
+		{
+			fb.drawBitmap(fontp->data +pgm_read_word(&(fontp->charInfo[chars[i]].offset)),fontp->heightPixels,pgm_read_byte(&(fontp->charInfo[chars[i]].widthBits)),x,y);
+			x=x+pgm_read_byte(&(fontp->charInfo[chars[i]].widthBits))+2;
+		}
+	}
+	
+}
+
 
 ISR(TIMER1_COMPA_vect) { 
 
@@ -193,9 +280,12 @@ int main(void)
 		
 		fb.clear();
 
+		
+
 		// Leading Edge Search Region below
 		#pragma region LeadingEdgeSearch
 		if (LEdgeSearch) {		
+			WriteText(&IM8_FontInfo,"Search: 100ms",64,0,CENTRE);
 			x=0;  // Buffer byte counter
 			y=0;  // Buffer bit counter
 			for (i=0; i<=999; i++) {   // millisecond counter
@@ -211,7 +301,7 @@ int main(void)
 				{
 					if (!PrevPinState && PinState) 	LEdgeCount[(i-LEdgeSMin)/LEdgeSRange]++; // leading Edge found, increment counter for current bin
 				}
-				if (PinState) fb.drawPixel(x,y); // draw pixel to show raw signal
+				if (PinState) fb.drawPixel(x,y+12); // draw pixel to show raw signal
 			}
 
 			for(uint8_t j=0; j<=9; j++){

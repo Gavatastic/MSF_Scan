@@ -21,7 +21,7 @@ main.d main.o: .././main.cpp \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\pgmspace.h \
  .././SSD1306.h .././I2C.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\util\twi.h \
- .././fonts/fonts.h .././fonts/bitmap_db.h .././fonts/WD8.h
+ .././fonts.h .././bitmap_db.h .././fonts/WD8.h .././fonts/bitmap_db.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h:
 
@@ -69,8 +69,10 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\util\twi.h:
 
-.././fonts/fonts.h:
+.././fonts.h:
 
-.././fonts/bitmap_db.h:
+.././bitmap_db.h:
 
 .././fonts/WD8.h:
+
+.././fonts/bitmap_db.h:

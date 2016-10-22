@@ -37,6 +37,7 @@ SUBDIRS :=
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
+../fonts.c \
 ../Framebuffer.cpp \
 ../I2C.cpp \
 ../main.cpp \
@@ -50,24 +51,28 @@ ASM_SRCS +=
 
 
 OBJS +=  \
+fonts.o \
 Framebuffer.o \
 I2C.o \
 main.o \
 SSD1306.o
 
 OBJS_AS_ARGS +=  \
+fonts.o \
 Framebuffer.o \
 I2C.o \
 main.o \
 SSD1306.o
 
 C_DEPS +=  \
+fonts.d \
 Framebuffer.d \
 I2C.d \
 main.d \
 SSD1306.d
 
 C_DEPS_AS_ARGS +=  \
+fonts.d \
 Framebuffer.d \
 I2C.d \
 main.d \
@@ -95,6 +100,15 @@ LINKER_SCRIPT_DEP+=
 
 
 
+
+
+
+./%.o: .././%.c
+	@echo Building file: $<
+	@echo Invoking: AVR8/GNU C Compiler : 4.9.2
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.0.98\include"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.0.98\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
 
 ./%.o: .././%.cpp
 	@echo Building file: $<

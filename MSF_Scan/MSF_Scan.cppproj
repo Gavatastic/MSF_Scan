@@ -179,6 +179,15 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bitmap_db.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fonts.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Framebuffer.cpp">
       <SubType>compile</SubType>
     </Compile>

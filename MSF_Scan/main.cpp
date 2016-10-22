@@ -285,7 +285,18 @@ int main(void)
 		// Leading Edge Search Region below
 		#pragma region LeadingEdgeSearch
 		if (LEdgeSearch) {		
-			WriteText(&IM8_FontInfo,"Search: 100ms",64,0,CENTRE);
+			
+			fb.drawRectangle(10,12,113,25); // main signal window - shows whole second
+			for (uint8_t j=0; j<=49; j++) {
+				fb.drawPixel(12+j*2,43);
+			}
+			
+			if (LEdgeSRange==100) WriteText(&IM8_FontInfo,"Search : 100ms",63,0,CENTRE);
+			if (LEdgeSRange==10) {
+				WriteText(&IM8_FontInfo,"Search : 10ms",63,0,CENTRE);
+				fb.drawRectangle(10,31,113,40);
+			}
+			
 			x=0;  // Buffer byte counter
 			y=0;  // Buffer bit counter
 			for (i=0; i<=999; i++) {   // millisecond counter
@@ -300,8 +311,10 @@ int main(void)
 				if (i>=LEdgeSMin && i<=LEdgeSMin+(10*LEdgeSRange)-1) // id ms counter within Leading Edge search range
 				{
 					if (!PrevPinState && PinState) 	LEdgeCount[(i-LEdgeSMin)/LEdgeSRange]++; // leading Edge found, increment counter for current bin
+					if (PinState && LEdgeSRange==10) fb.drawVLine(12+(i-LEdgeSMin),33,6);
 				}
-				if (PinState) fb.drawPixel(x,y+12); // draw pixel to show raw signal
+				if (PinState) fb.drawPixel((i/10)+12,(i%10)+14); // draw pixel to show raw signal
+				
 			}
 
 			for(uint8_t j=0; j<=9; j++){
@@ -313,7 +326,7 @@ int main(void)
 				{
 					LEdgeSum[j]=0;  // else set count of number of consecutive seconds to zero
 				}
-				fb.drawRectangle(j*12,63-LEdgeSum[j],(j+1)*12,63);  // display bar for bin on OLED screen
+				fb.drawRectangle(12+(j*10),63-LEdgeSum[j]*2,12+((j+1)*10),63);  // display bar for bin on OLED screen
 				LEdgeCount[j]=0;  // reset count of hits this second ready for next second
 			}
 
@@ -332,10 +345,10 @@ int main(void)
 			}
 
 			if (LEdgeSRange==10) {
-				fb.drawVLine((LEdgeSMin/100)*12,25,5); // Mark range that we're searching in with two small v lines
-				fb.drawVLine(((LEdgeSMin/100)+1)*12,25,5);
+				fb.drawVLine(12+(LEdgeSMin/100)*10,25,5); // Mark range that we're searching in with two small v lines
+				fb.drawVLine(12+((LEdgeSMin/100)+1)*10,25,5);
 				LESecsInMode++;
-				if (LESecsInMode>=30) { // we've been searching in 10ms bins for 30 seconds now, so revert to 100ms bins
+				if (LESecsInMode>=20) { // we've been searching in 10ms bins for 30 seconds now, so revert to 100ms bins
 					LEdgeSRange=100;
 					LEdgeSMin=0;
 					for(uint8_t j=0; j<=9; j++) { // reset the bin counts
@@ -344,6 +357,7 @@ int main(void)
 					TC=TC+(rand() & 0xFF);
 					LESecsInMode=0;			
 				}
+				
 				if (LEdgeSum[LEMax]>=10){  // *** START OF SECOND FOUND ***
 					LEdge=LEdgeSMin+(LEMax*10)+5; // << This is what we'll treat as the start of the second
 					LEdgeSMin=0; // reset these variables ready for next time

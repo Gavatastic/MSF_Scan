@@ -188,6 +188,24 @@ void WriteText(const FONT_INFO *fontp, const char text[], uint8_t x, uint8_t y, 
 	
 }
 
+void Byte2String (char* outstr ,uint8_t u8t)
+{
+	
+	if((uint8_t)u8t/100==0){
+		outstr[0]=0x20;
+	} else {
+		outstr[0]=0x30 + (uint8_t)u8t/100;
+	}	
+	
+	if((uint8_t)u8t/100==0 && (uint8_t)(u8t%100)/10==0){
+		outstr[1]=0x20;
+	} else {
+		outstr[1]= 0x30 + (uint8_t)(u8t%100)/10;
+	}
+	
+	outstr[2]=0x30 + (uint8_t)(u8t%10);
+}
+
 
 ISR(TIMER1_COMPA_vect) { 
 
@@ -249,6 +267,9 @@ int main(void)
 	bool PinState=false;
 	bool PrevPinState=false;
 	
+	// Character array for displaying bytes as text
+	char BString[4]="   ";
+	
 	// Show splash-screen
 	fb.clear();
 	fb.drawBitmap(Atomic,64,64,32,0);
@@ -295,6 +316,8 @@ int main(void)
 			if (LEdgeSRange==10) {
 				WriteText(&IM8_FontInfo,"Search : 10ms",63,0,CENTRE);
 				fb.drawRectangle(10,31,113,40);
+				Byte2String(BString,20-LESecsInMode);
+				WriteText(&IM8_FontInfo,BString,127,0,RIGHT);
 			}
 			
 			x=0;  // Buffer byte counter
@@ -375,8 +398,20 @@ int main(void)
 
 		if (!LEdgeSearch) {	
 			
-			// DISPLAY SIGNAL AND BIT BOUNDARIES
+			// Display mode at top of OLED, draw box around signal with segment marks
+			if (!MMarkFound) {
+				WriteText(&IM8_FontInfo,"Min mark search",63,0,CENTRE);
+			} else {
+				WriteText(&IM8_FontInfo,"Min mark found",63,0,CENTRE);
+			}
+			fb.drawRectangle(10,12,113,25); // signal window (shows whole second)
+			fb.drawVLine(22,25,3);
+			fb.drawVLine(32,25,3);
+			fb.drawVLine(42,25,3);
+			fb.drawVLine(62,25,3);
 			
+			
+			// DISPLAY SIGNAL AND BIT BOUNDARIES
 			x=0;  // Buffer byte counter
 			y=0;  // Buffer bit counter	
 			LEdgeDetect=false; // no edge detected yet
@@ -399,8 +434,8 @@ int main(void)
 					//LEdgeDetect=true;
 				//}
 							
-//				if (PinState) fb.drawPixel(x,y+2); // draw pixel to show raw signal		
-				if (PinState) fb.drawPixel(i/10,i%10); // draw pixel to show raw signal
+	
+				if (PinState) fb.drawPixel((i/10)+12,(i%10)+14); // draw pixel to show raw signal
 				
 					
 				if (PinState && i>=100 && i<=199) BitASample++;
@@ -422,15 +457,12 @@ int main(void)
 			
 			
 			}
-			fb.drawVLine(9,10,3); // draw bit boundaries in signal display area
-			fb.drawVLine(19,10,3);
-			fb.drawVLine(29,10,3);
-			fb.drawVLine(49,10,3);	
 			
 			if (MMarkFound) {
-				fb.drawRectangle(0,60,3,63,true); // draw a filled square bottom left corner if minute marker found 
 				SigSecond=SigSecond+1;
 				if (SigSecond>=60) SigSecond=0;
+				Byte2String(BString,SigSecond);
+				WriteText(&IM8_FontInfo,BString,128,0,RIGHT);
 			}
 		}
 		// --------------------------------------------------------------------------------------

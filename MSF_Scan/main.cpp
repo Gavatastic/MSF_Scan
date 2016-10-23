@@ -256,14 +256,20 @@ int main(void)
 	
 	// Time decoding variables
 	bool MMarkFound=false; // has the Minute Marker been found
-	bool SigSecond=0; // what second are we at during the minute?
+	uint8_t SigSecond=0; // what second are we at during the minute?
 	uint8_t BitASample=0; // for counting the strikes in the BitA window 
 	uint8_t BitBSample=0; // for counting the strikes in the BitB window
 	uint8_t BitCSample=0; // for counting the strikes in the remainder of the first half of the second
 	bool BitA[60]={false}; // BitA array (one minute's worth)
 	bool BitB[60]={false}; // BitB array (one minute's worth)
 	bool BitC=false; // BitC - just for the current second as it has no use other than for the minute marker
-	
+	uint8_t SigMinute=0;
+	uint8_t SigHour=0;
+	uint8_t SigDoW=0;
+	uint8_t SigDay=0;
+	uint8_t SigMonth=0;
+	uint8_t SigYear=0;
+		
 	bool PinState=false;
 	bool PrevPinState=false;
 	
@@ -410,6 +416,11 @@ int main(void)
 			fb.drawVLine(42,25,3);
 			fb.drawVLine(62,25,3);
 			
+			// increment signal second counter if MMark found
+			if (MMarkFound) {
+				SigSecond++;
+				if (SigSecond>=60) SigSecond=0;
+			}
 			
 			// DISPLAY SIGNAL AND BIT BOUNDARIES
 			x=0;  // Buffer byte counter
@@ -419,6 +430,10 @@ int main(void)
 			BitASample=0;
 			BitBSample=0;
 			BitCSample=0;
+
+			BitA[SigSecond]=false;
+			BitB[SigSecond]=false;
+			BitC=false;
 			
 			for (i=0; i<=999; i++) {
 				y++;
@@ -433,10 +448,8 @@ int main(void)
 					//TC=TC-i;
 					//LEdgeDetect=true;
 				//}
-							
 	
 				if (PinState) fb.drawPixel((i/10)+12,(i%10)+14); // draw pixel to show raw signal
-				
 					
 				if (PinState && i>=100 && i<=199) BitASample++;
 				if (PinState && i>=200 && i<=299) BitBSample++;
@@ -446,21 +459,77 @@ int main(void)
 					if (BitASample>=85) BitA[SigSecond]=true;
 					if (BitBSample>=85) BitB[SigSecond]=true;
 					if (BitCSample>=170) BitC=true;
-					BitASample=0; // reset samples ready for next second
-					BitBSample=0;
-					BitCSample=0;
+
 					if (!MMarkFound && BitA[0] && BitB[0] && BitC) { // test for minute marker if not found
 						MMarkFound=true;
 						SigSecond=0;
 					}
+
+					if (!MMarkFound) {					
+						// if no minute marker found display bit samples and results 
+						WriteText(&IM8_FontInfo,"BitA",0,30,LEFT);
+						WriteText(&IM8_FontInfo,BitA[SigSecond] ? "1" : "0",35,30,FREEPOS);
+						Byte2String(BString,BitASample);
+						WriteText(&IM8_FontInfo,BString,45,30,FREEPOS);
+
+						WriteText(&IM8_FontInfo,"BitB",0,42,LEFT);
+						WriteText(&IM8_FontInfo,BitB[SigSecond] ? "1" : "0",35,42,FREEPOS);
+						Byte2String(BString,BitBSample);
+						WriteText(&IM8_FontInfo,BString,45,42,FREEPOS);
+
+						WriteText(&IM8_FontInfo,"BitC",0,54,LEFT);
+						WriteText(&IM8_FontInfo,BitC ? "1" : "0",35,54,FREEPOS);
+						Byte2String(BString,BitCSample);
+						WriteText(&IM8_FontInfo,BString,45,54,FREEPOS);
+								
+						BitASample=0; // reset samples ready for next second
+						BitBSample=0;
+						BitCSample=0;											
+					}
+					
+					if (MMarkFound) { // if minute marker found...
+						// ... interpret data collected
+						if (SigSecond==24) SigYear=BitA[17]*80 + BitA[18]*40 + BitA[19]*20 + BitA[20]*10 + BitA[21]*8 + BitA[22]*4 + BitA[23]*2 + BitA[24];
+						if (SigSecond==29) SigMonth=BitA[25]*10 + BitA[26]*8 + BitA[27]*4 + BitA[28]*2 + BitA[29];
+						if (SigSecond==35) SigDay=BitA[30]*20 + BitA[31]*10 + BitA[32]*8 + BitA[33]*4 + BitA[34]*2 + BitA[35];
+						if (SigSecond==38) SigDoW=BitA[36]*4 + BitA[37]*2 + BitA[38];
+						if (SigSecond==44) SigHour=BitA[39]*20 + BitA[40]*10 + BitA[41]*8 + BitA[42]*4 + BitA[43]*2 + BitA[44];
+						if (SigSecond==51) SigMinute=BitA[45]*40 + BitA[46]*20 + BitA[47]*10 + BitA[48]*8 + BitA[49]*4 + BitA[50]*2 + BitA[51];
+
+						if (SigSecond>=24) {
+							Byte2String(BString,SigYear);
+							WriteText(&IM8_FontInfo,BString,40,30,FREEPOS);
+						}
+						if (SigSecond>=29) {
+							Byte2String(BString,SigMonth);
+							WriteText(&IM8_FontInfo,BString,20,30,FREEPOS);
+						}
+						if (SigSecond>=35) {
+							Byte2String(BString,SigDay);
+							WriteText(&IM8_FontInfo,BString,0,30,FREEPOS);
+						}
+						if (SigSecond>=38) {
+							Byte2String(BString,SigDoW);
+							WriteText(&IM8_FontInfo,BString,70,30,FREEPOS);
+						}
+						if (SigSecond>=44) {
+							Byte2String(BString,SigHour);
+							WriteText(&IM8_FontInfo,BString,0,42,FREEPOS);
+						}
+						if (SigSecond>=51) {
+							Byte2String(BString,SigMinute);
+							WriteText(&IM8_FontInfo,BString,20,42,FREEPOS);
+						}
+						
+						
+					}
+					
 				}
 			
 			
 			}
 			
 			if (MMarkFound) {
-				SigSecond=SigSecond+1;
-				if (SigSecond>=60) SigSecond=0;
 				Byte2String(BString,SigSecond);
 				WriteText(&IM8_FontInfo,BString,128,0,RIGHT);
 			}

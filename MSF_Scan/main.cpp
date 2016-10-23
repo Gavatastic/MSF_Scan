@@ -273,8 +273,10 @@ int main(void)
 	bool PinState=false;
 	bool PrevPinState=false;
 	
-	// Character array for displaying bytes as text
+	// Character arrays for converting numbers
 	char BString[4]="   ";
+	char DString[9]="--/--/--";
+	char TString[6]="--:--";
 	
 	// Show splash-screen
 	fb.clear();
@@ -419,7 +421,11 @@ int main(void)
 			// increment signal second counter if MMark found
 			if (MMarkFound) {
 				SigSecond++;
-				if (SigSecond>=60) SigSecond=0;
+				if (SigSecond>=60) {
+					SigSecond=0;
+					DString[0]=DASH; DString[1]=DASH; DString[3]=DASH; DString[4]=DASH; DString[6]=DASH; DString[7]=DASH;
+					TString[0]=DASH; TString[1]=DASH; TString[3]=DASH; TString[4]=DASH;
+				}
 			}
 			
 			// DISPLAY SIGNAL AND BIT BOUNDARIES
@@ -496,31 +502,51 @@ int main(void)
 						if (SigSecond==44) SigHour=BitA[39]*20 + BitA[40]*10 + BitA[41]*8 + BitA[42]*4 + BitA[43]*2 + BitA[44];
 						if (SigSecond==51) SigMinute=BitA[45]*40 + BitA[46]*20 + BitA[47]*10 + BitA[48]*8 + BitA[49]*4 + BitA[50]*2 + BitA[51];
 
-						if (SigSecond>=24) {
-							Byte2String(BString,SigYear);
-							WriteText(&IM8_FontInfo,BString,40,30,FREEPOS);
-						}
-						if (SigSecond>=29) {
-							Byte2String(BString,SigMonth);
-							WriteText(&IM8_FontInfo,BString,20,30,FREEPOS);
-						}
-						if (SigSecond>=35) {
-							Byte2String(BString,SigDay);
-							WriteText(&IM8_FontInfo,BString,0,30,FREEPOS);
-						}
-						if (SigSecond>=38) {
-							Byte2String(BString,SigDoW);
-							WriteText(&IM8_FontInfo,BString,70,30,FREEPOS);
-						}
-						if (SigSecond>=44) {
-							Byte2String(BString,SigHour);
-							WriteText(&IM8_FontInfo,BString,0,42,FREEPOS);
-						}
-						if (SigSecond>=51) {
-							Byte2String(BString,SigMinute);
-							WriteText(&IM8_FontInfo,BString,20,42,FREEPOS);
+						// ... and display if meaningful
+						if(SigSecond>=35) {
+							DString[0]= 0x30 + (uint8_t)(SigDay%100)/10;
+							DString[1]= 0x30 + (uint8_t)(SigDay%10);
 						}
 						
+						if(SigSecond>=29) {
+							DString[3]= 0x30 + (uint8_t)(SigMonth%100)/10;
+							DString[4]= 0x30 + (uint8_t)(SigMonth%10);
+						}						
+
+						if(SigSecond>=24) {
+							DString[6]= 0x30 + (uint8_t)(SigYear%100)/10;
+							DString[7]= 0x30 + (uint8_t)(SigYear%10);
+							WriteText(&IM8_FontInfo,DString,40,30,CENTRE);
+						}
+
+						if (SigSecond>=38) {
+							switch(SigDoW) {
+								case 0: WriteText(&IM8_FontInfo,"Sun",70,30,RIGHT);
+										break;
+								case 1: WriteText(&IM8_FontInfo,"Mon",70,30,RIGHT);
+										break;
+								case 2: WriteText(&IM8_FontInfo,"Tue",70,30,RIGHT);
+										break;
+								case 3: WriteText(&IM8_FontInfo,"Wed",70,30,RIGHT);
+										break;
+								case 4: WriteText(&IM8_FontInfo,"Thu",70,30,RIGHT);
+										break;
+								case 5: WriteText(&IM8_FontInfo,"Fri",70,30,RIGHT);
+										break;
+								case 6: WriteText(&IM8_FontInfo,"Sat",70,30,RIGHT);
+										break;
+							}
+
+						}
+						if (SigSecond>=51) {
+							TString[3]= 0x30 + (uint8_t)(SigMinute%100)/10;
+							TString[4]= 0x30 + (uint8_t)(SigMinute%10);
+						}
+						if (SigSecond>=44) {
+							TString[0]= 0x30 + (uint8_t)(SigHour%100)/10;
+							TString[1]= 0x30 + (uint8_t)(SigHour%10);
+							WriteText(&IM16_FontInfo,TString,0,42,CENTRE);							
+						}
 						
 					}
 					

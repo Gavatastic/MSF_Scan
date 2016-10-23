@@ -138,7 +138,7 @@ uint8_t Punctuate(char mark)
 		case '`' : return OQUOTE; break;
 		case 'a' : return LOWERA; break;
 		case '{' : return OCURL; break;
-			case '|' : return PIPE; break;
+		case '|' : return PIPE; break;
 		case '}' : return CCURL; break;
 		case '~' : return TILDE; break;
 		
@@ -206,24 +206,16 @@ void Byte2String (char* outstr ,uint8_t u8t)
 	outstr[2]=0x30 + (uint8_t)(u8t%10);
 }
 
-
 ISR(TIMER1_COMPA_vect) { 
 
 	TC++;
+	if (TC>=1000) 	TC=0;
+	
 	if ((PIND & (1<<DDD3))) {
-		
-//		fb.buffer[(uint16_t)(TC%8)*128+(TC/8)]=0xFF;
 		buffer[(uint16_t)TC/8] |= (1<<(TC%8));
-	
 	} else {
-//		fb.buffer[(uint16_t)(TC%8)*128+(TC/8)]=0x00;	
 		buffer[(uint16_t)TC/8] &= ~(1<<(TC%8));
-	
 	}
-	if (TC>=1000) {
-		TC=0;
-
-	}	
 
 	if (TC==LEdge) { 
 		TICK=true;	
@@ -232,8 +224,6 @@ ISR(TIMER1_COMPA_vect) {
 	}
 
 }
-
-
 
 int main(void)
 {
@@ -250,6 +240,7 @@ int main(void)
 	uint8_t LEMax=0; // bin with highest number of consecutive hits
 	uint8_t LE2Max=0; // bin with second highest number of consecutive hits
 	uint8_t LESecsInMode=0; // number of seconds that we have been in this LEdge Search mode
+	uint8_t LEdgeAdjust=0; // number of milliseconds to adjust tick counter by to allow for drift
 	
 	// Leading Edge adjustment variables
 	bool LEdgeDetect= false;
@@ -263,6 +254,8 @@ int main(void)
 	bool BitA[60]={false}; // BitA array (one minute's worth)
 	bool BitB[60]={false}; // BitB array (one minute's worth)
 	bool BitC=false; // BitC - just for the current second as it has no use other than for the minute marker
+	
+	// Time, date etc according to signal
 	uint8_t SigMinute=0;
 	uint8_t SigHour=0;
 	uint8_t SigDoW=0;
@@ -282,15 +275,13 @@ int main(void)
 	fb.clear();
 	fb.drawBitmap(Atomic,64,64,32,0);
 	fb.show();
-	_delay_ms(3000);
+	_delay_ms(1500);
 	fb.clear();
 	fb.show();
-
 
 	// Enable atomic clock pulse pin for input
 	DDRD &= ~(1<<DDD3);// // pin PC3
 	PORTD |= (1<<DDD3); //  pin PC3 set to pulled-up
-	
 	
 	// Initialise ticker
 	TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode
@@ -299,8 +290,6 @@ int main(void)
 	sei(); // Enable global interrupts
 	OCR1A = 1999; // Set CTC compare value to 1000Hz at 16MHz AVR clock, with a prescaler of 8
 	
-	
-	
 	/* Replace with your application code */
 	while (1)
 	{
@@ -308,8 +297,6 @@ int main(void)
 		TICK=false;
 		
 		fb.clear();
-
-		
 
 		// Leading Edge Search Region below
 		#pragma region LeadingEdgeSearch
@@ -450,10 +437,10 @@ int main(void)
 
 				PinState=CHECK_BIT(buffer[x],y);  // read pin state
 				
-				//if (!LEdgeDetect && PinState && i<25) { // adjust tick counter for drift
-					//TC=TC-i;
-					//LEdgeDetect=true;
-				//}
+				if (!LEdgeDetect && PinState && i<25) { // adjust tick counter for drift
+					LEdgeDetect=true;
+					LEdgeAdjust=i;
+				}
 	
 				if (PinState) fb.drawPixel((i/10)+12,(i%10)+14); // draw pixel to show raw signal
 					
@@ -559,14 +546,12 @@ int main(void)
 				Byte2String(BString,SigSecond);
 				WriteText(&IM8_FontInfo,BString,128,0,RIGHT);
 			}
+			
 		}
 		// --------------------------------------------------------------------------------------
-
-
 		
 		fb.show(); // update OLED screen
-		
-		
+		TC=TC-LEdgeAdjust;
 	}
 }
 

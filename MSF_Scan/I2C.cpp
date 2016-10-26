@@ -26,7 +26,7 @@ For more information, please refer to <http://unlicense.org/>
 */
 
 #include "I2C.h"
-#define F_CPU 8000000UL
+#define F_CPU 16000000UL
 
 I2C::I2C() {}
 

@@ -14,6 +14,11 @@
 #include "fonts/WD8.h"
 
 
+// to do:
+// 1. correct f_cpu
+// 2. try different timer
+
+
 //  CAUTION: Region! - Constants
 #pragma region Constants
 const uint8_t LEFT=0;
@@ -225,6 +230,7 @@ ISR(TIMER1_COMPA_vect) {
 
 }
 
+
 int main(void)
 {
 	// millisecond counter and buffer access variables
@@ -290,6 +296,7 @@ int main(void)
 	sei(); // Enable global interrupts
 	OCR1A = 1999; // Set CTC compare value to 1000Hz at 16MHz AVR clock, with a prescaler of 8
 	
+
 	/* Replace with your application code */
 	while (1)
 	{
@@ -306,13 +313,26 @@ int main(void)
 			for (uint8_t j=0; j<=49; j++) {
 				fb.drawPixel(12+j*2,43);
 			}
-			
+
+			// show SecsInMode countdown in top right corner
+			Byte2String(BString,20-LESecsInMode);
+			WriteText(&IM8_FontInfo,BString,127,0,RIGHT);
+			// check whether we have been searching in this mode for more than 20 seconds, if so perturb TC, reset and start again
+			LESecsInMode++;
+			if (LESecsInMode>=20) { // we've been searching in 10ms bins for 30 seconds now, so revert to 100ms bins
+				LEdgeSRange=100;
+				LEdgeSMin=0;
+				for(uint8_t j=0; j<=9; j++) { // reset the bin counts
+					LEdgeSum[j]=0;
+				}
+				TC=TC+(rand() & 0xFF);
+				LESecsInMode=0;
+			}
+						
 			if (LEdgeSRange==100) WriteText(&IM8_FontInfo,"Search : 100ms",63,0,CENTRE);
 			if (LEdgeSRange==10) {
 				WriteText(&IM8_FontInfo,"Search : 10ms",63,0,CENTRE);
 				fb.drawRectangle(10,31,113,40);
-				Byte2String(BString,20-LESecsInMode);
-				WriteText(&IM8_FontInfo,BString,127,0,RIGHT);
 			}
 			
 			x=0;  // Buffer byte counter
@@ -355,26 +375,24 @@ int main(void)
 
 
 			if (LEdgeSRange==100 && LEdgeSum[LEMax]>=10) { // one of the 100ms-wide bins has more than 10 consecutive hits
-				LEdgeSRange=10; // so we're going to narrow the search with 10ms wide bins ...
-				LEdgeSMin=100*LEMax; // ... in the bin that had the most consecutive hits
-				for(uint8_t j=0; j<=9; j++) { // reset the bin counts
-					LEdgeSum[j]=0; 
-				}
-			}
-
-			if (LEdgeSRange==10) {
-				fb.drawVLine(12+(LEdgeSMin/100)*10,25,5); // Mark range that we're searching in with two small v lines
-				fb.drawVLine(12+((LEdgeSMin/100)+1)*10,25,5);
-				LESecsInMode++;
-				if (LESecsInMode>=20) { // we've been searching in 10ms bins for 30 seconds now, so revert to 100ms bins
-					LEdgeSRange=100;
-					LEdgeSMin=0;
+				LESecsInMode=0; // reset SecsInMode counter whatever 	
+				if (LE2Max<LEMax) {
+					LEdgeSRange=10; // so we're going to narrow the search with 10ms wide bins ...
+					LEdgeSMin=100*LEMax; // ... in the bin that had the most consecutive hits
+					for(uint8_t j=0; j<=9; j++) { // reset the bin counts
+						LEdgeSum[j]=0; 
+					}
+				} else { // 2nd highest bin has same number as highest - so reset and start again
+					TC=TC+(rand() & 0xFF);
 					for(uint8_t j=0; j<=9; j++) { // reset the bin counts
 						LEdgeSum[j]=0;
 					}	
-					TC=TC+(rand() & 0xFF);
-					LESecsInMode=0;			
 				}
+			}
+				
+			if (LEdgeSRange==10) {
+				fb.drawVLine(12+(LEdgeSMin/100)*10,25,5); // Mark range that we're searching in with two small v lines
+				fb.drawVLine(12+((LEdgeSMin/100)+1)*10,25,5);
 				
 				if (LEdgeSum[LEMax]>=10){  // *** START OF SECOND FOUND ***
 					LEdge=LEdgeSMin+(LEMax*10)+5; // << This is what we'll treat as the start of the second
